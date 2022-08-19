@@ -1,8 +1,11 @@
 use std::{
     collections::HashMap,
+    env,
+    error::Error,
     fs::File,
-    io::{BufRead, BufReader, BufWriter, Error, Write},
-    path::Path,
+    io::{BufRead, BufReader, BufWriter, Write},
+    path::{Path, PathBuf},
+    process,
 };
 
 #[derive(PartialEq, Debug)]
@@ -23,14 +26,40 @@ fn word_to_bitmap(word: &str) -> Result<u32, BitmapError> {
     Ok(bitmap)
 }
 
-fn main() -> Result<(), Error> {
+fn parse_args() -> Result<(PathBuf, PathBuf), &'static str> {
+    let mut args = env::args();
+    args.next();
+
+    let input = match args.next() {
+        Some(input) => input,
+        None => return Err("input file required"),
+    };
+
+    let output = match args.next() {
+        Some(output) => output,
+        None => return Err("output file required"),
+    };
+
+    Ok((
+        Path::new(&input).to_path_buf(),
+        Path::new(&output).to_path_buf(),
+    ))
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let (input, output) = match parse_args() {
+        Ok(i) => i,
+        Err(e) => {
+            eprintln!("error: {e}");
+            process::exit(-1)
+        }
+    };
     // This vector of id to alpha-bitmap only works because we know
     // there's about 14k words in our input
     println!("Reading and parsing...");
     let mut words: Vec<(u16, u32)> = vec![];
     {
-        let words_file = Path::new("words_len5.txt");
-        let raw_contents = File::open(words_file)?;
+        let raw_contents = File::open(input)?;
         let lines = BufReader::new(raw_contents).lines();
 
         for (i, line) in lines.flatten().enumerate() {
@@ -59,7 +88,7 @@ fn main() -> Result<(), Error> {
     }
 
     println!("Writing...");
-    let mut output = BufWriter::new(File::create(Path::new("graph.txt"))?);
+    let mut output = BufWriter::new(File::create(output)?);
     progress = 0;
     for e in graph {
         write!(output, "{}:", e.0)?;
