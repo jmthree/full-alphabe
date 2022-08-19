@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     env,
     error::Error,
     fs::File,
@@ -54,29 +54,27 @@ fn main() -> Result<(), Box<dyn Error>> {
             process::exit(-1)
         }
     };
-    // This vector of id to alpha-bitmap only works because we know
-    // there's about 14k words in our input
     println!("Reading and parsing...");
-    let mut words: Vec<(u16, u32)> = vec![];
+    let mut words = HashSet::new();
     {
         let raw_contents = File::open(input)?;
         let lines = BufReader::new(raw_contents).lines();
 
-        for (i, line) in lines.flatten().enumerate() {
+        for line in lines.flatten() {
             match word_to_bitmap(line.trim()) {
-                Ok(b) => words.push((i as u16, b)),
-                Err(_e) => (),
-            }
+                Ok(b) => words.insert(b),
+                Err(_e) => false,
+            };
         }
     }
 
-    println!("Building map from {} words...", words.len());
-    let mut graph: HashMap<u16, Vec<u16>> = HashMap::new();
+    println!("Building map from {} distinct word bitmaps...", words.len());
+    let mut graph: HashMap<u32, Vec<u32>> = HashMap::new();
     let ten_percent = words.len() / 10;
     let mut progress = 0;
-    for (i, ib) in &words {
-        for (j, jb) in &words {
-            if ib & jb != 0 {
+    for i in &words {
+        for j in &words {
+            if i & j != 0 {
                 continue;
             }
             graph.entry(*i).or_default().push(*j);
