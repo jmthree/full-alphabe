@@ -43,7 +43,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut work: Vec<(Vec<u32>, u32)> = Vec::new();
     let mut solutions: HashSet<BTreeSet<u32>> = HashSet::new();
-    let mut completed: HashSet<u32> = HashSet::new();
 
     for key in graph.keys() {
         let w = (vec![*key], *key);
@@ -57,12 +56,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
         let current = path.last().unwrap(); // This will always be non empty
-        if path.len() == 1 {
-            println!("Started processing graph from {current}");
-            completed.insert(*current);
+        if !graph.contains_key(current) {
+            continue;
         }
         let candidates = graph.get(current).unwrap();
-        for candidate in candidates.iter().filter(|c| !completed.contains(c)) {
+        for candidate in candidates {
             if candidate & path_bitmap == 0 {
                 let mut next = path.clone();
                 next.push(*candidate);

@@ -35,6 +35,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             if i & j != 0 {
                 continue;
             }
+            if i > j {
+                continue;
+            }
             graph.entry(*i).or_default().push(*j);
         }
         progress += 1;
