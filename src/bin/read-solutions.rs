@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashMap, HashSet},
+    collections::HashMap,
     env,
     error::Error,
     fs::File,
@@ -40,14 +40,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     println!("Reading and parsing solutions...");
-    let mut solutions: HashSet<BTreeSet<u32>> = HashSet::new();
+    let mut solutions: Vec<Vec<u32>> = Vec::new();
     {
         let raw_contents = File::open(solutions_path)?;
         let lines = BufReader::new(raw_contents).lines();
 
         for line in lines.flatten() {
-            let values: BTreeSet<u32> = line.trim().split(',').flat_map(|s| s.parse()).collect();
-            solutions.insert(values);
+            let values: Vec<u32> = line.trim().split(',').flat_map(|s| s.parse()).collect();
+            solutions.push(values);
         }
     }
 

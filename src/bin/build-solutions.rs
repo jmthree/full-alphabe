@@ -1,9 +1,4 @@
-use std::{
-    collections::{BTreeSet, HashMap, HashSet},
-    error::Error,
-    io::Write,
-    process,
-};
+use std::{collections::HashMap, error::Error, io::Write, process};
 
 use full_alphabe::{parse_input_ouput_args, Graph};
 
@@ -42,17 +37,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let mut work: Vec<(Vec<u32>, u32)> = Vec::new();
-    let mut solutions: HashSet<BTreeSet<u32>> = HashSet::new();
+    let mut solutions: Vec<Vec<u32>> = Vec::new();
 
     for key in graph.keys() {
         let w = (vec![*key], *key);
         work.push(w);
     }
 
+    println!("Building solutions...");
     while let Some(w) = work.pop() {
         let (path, path_bitmap) = w;
         if path.len() == 5 {
-            solutions.insert(BTreeSet::from_iter(path));
+            solutions.push(path);
             continue;
         }
         let current = path.last().unwrap(); // This will always be non empty
