@@ -66,18 +66,34 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    println!("Determining the {} solutions...", solutions.len());
-    for solution in solutions {
+    println!("Determining the solutions...");
+    println!("---");
+    'solutions: for solution in solutions {
+        let mut solution_words: Vec<Vec<String>> = Vec::new();
         for bitmap in solution {
-            print!(
-                "{} ",
-                words
-                    .get(&bitmap)
-                    .map(|w| w.join("/"))
-                    .unwrap_or_else(|| "UNKNOWN".to_string())
-            );
+            if let Some(words) = words.get(&bitmap) {
+                if solution_words.is_empty() {
+                    for word in words {
+                        solution_words.push(vec![word.to_string()]);
+                    }
+                }
+                let mut new_words: Vec<Vec<String>> = Vec::new();
+                for word in words {
+                    for existing in &solution_words {
+                        let mut new = existing.clone();
+                        new.push(word.to_string());
+                        new_words.push(new);
+                    }
+                }
+                solution_words = new_words;
+            } else {
+                eprintln!("No word found for bitmap {bitmap}. Skipping solution.");
+                continue 'solutions;
+            }
         }
-        println!();
+        for words in solution_words {
+            println!("{}", words.join(", "));
+        }
     }
 
     Ok(())
