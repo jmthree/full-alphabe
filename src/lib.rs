@@ -1,3 +1,5 @@
+pub mod words;
+
 use std::{
     collections::HashMap,
     env,
@@ -62,6 +64,3 @@ pub fn word_to_bitmap(word: &str) -> Result<u32, BitmapError> {
     }
     Ok(bitmap)
 }
-
-#[cfg(test)]
-mod tests {}

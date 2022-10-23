@@ -8,7 +8,7 @@ use std::{
     process,
 };
 
-use full_alphabe::word_to_bitmap;
+use full_alphabe::{word_to_bitmap, words::combinations};
 
 fn parse_args() -> Result<(PathBuf, PathBuf), &'static str> {
     let mut args = env::args();
@@ -39,61 +39,52 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
+    println!("Reading and parsing words...");
+    let mut words: HashMap<u32, Vec<&str>> = HashMap::new();
+    {
+        let raw_contents = File::open(words_path)?;
+        let lines = BufReader::new(raw_contents).lines();
+
+        for line in lines {
+            if let Ok(word) = line {
+                let w = word.trim();
+                match word_to_bitmap(&word) {
+                    Ok(b) => words.entry(b).or_default().push(&w.to_owned()),
+                    Err(_e) => (),
+                };
+            }
+        }
+    }
+
     println!("Reading and parsing solutions...");
-    let mut solutions: Vec<Vec<u32>> = Vec::new();
+    let mut solutions: Vec<Vec<&str>> = Vec::new();
     {
         let raw_contents = File::open(solutions_path)?;
         let lines = BufReader::new(raw_contents).lines();
 
         for line in lines.flatten() {
-            let values: Vec<u32> = line.trim().split(',').flat_map(|s| s.parse()).collect();
-            solutions.push(values);
-        }
-    }
-
-    println!("Reading and parsing words...");
-    let mut words: HashMap<u32, Vec<String>> = HashMap::new();
-    {
-        let raw_contents = File::open(words_path)?;
-        let lines = BufReader::new(raw_contents).lines();
-
-        for line in lines.flatten() {
-            let word = line.trim().to_owned();
-            match word_to_bitmap(&word) {
-                Ok(b) => words.entry(b).or_default().push(word),
-                Err(_e) => (),
-            };
-        }
-    }
-
-    println!("Determining the solutions...");
-    println!("---");
-    'solutions: for solution in solutions {
-        let mut solution_words: Vec<Vec<String>> = Vec::new();
-        for bitmap in solution {
-            if let Some(words) = words.get(&bitmap) {
-                if solution_words.is_empty() {
-                    for word in words {
-                        solution_words.push(vec![word.to_string()]);
-                    }
-                }
-                let mut new_words: Vec<Vec<String>> = Vec::new();
-                for word in words {
-                    for existing in &solution_words {
-                        let mut new = existing.clone();
-                        new.push(word.to_string());
-                        new_words.push(new);
-                    }
-                }
-                solution_words = new_words;
-            } else {
-                eprintln!("No word found for bitmap {bitmap}. Skipping solution.");
-                continue 'solutions;
+            let bitmaps: Result<Vec<u32>, _> = line.split(',').map(|s| s.parse::<u32>()).collect();
+            if bitmaps.is_err() {
+                eprintln!("Found invalid solution {line}: bad bitmap");
+                continue;
             }
+            let solution: Option<Vec<Vec<&str>>> = bitmaps
+                .unwrap()
+                .iter()
+                .map(|b| words.get(b).map(|w| w.to_owned()))
+                .collect();
+            if solution.is_none() {
+                eprintln!("Found invalid solution {line}: missing word");
+                continue;
+            }
+            solutions.extend(combinations(&solution.unwrap()));
         }
-        for words in solution_words {
-            println!("{}", words.join(", "));
-        }
+    }
+
+    println!("Found {} solutions...", solutions.len());
+    println!("---");
+    for solution in solutions {
+        println!("{}", solution.join(" "));
     }
 
     Ok(())
